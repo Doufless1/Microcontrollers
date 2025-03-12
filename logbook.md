@@ -579,3 +579,9 @@ Global Interrupt Enable (sei()):
 
 
 
+
+
+
+
+
+I'll modify the project to use the SA52-11EWA seven-segment display instead of the MAX7219. Since the SA52-11EWA doesn't have a built-in I2C interface, we'll use a PCF8574 I2C I/O expander to control it, keeping with the requirement to have two I2C devices.
