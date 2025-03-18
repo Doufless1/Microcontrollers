@@ -1,86 +1,132 @@
+/**
+ * Main program for the Gyroscope with OLED display project
+ * 
+ * Hardware: 
+ * - Arduino/AVR board
+ * - MPU6050 Gyroscope/Accelerometer
+ * - SBC-OLED01 OLED Display
+ * 
+ * Author: For Doufless1, 2025-03-18
+ */
+
 #include <avr/io.h>
 #include <util/delay.h>
+#include <stdint.h>
 #include "../include/i2c.h"
-#include "../include/mpu9265.h"
-#include "../include/sa52_11ewa.h"
-#include "../include/serial.h"
+#include "../include/mpu6050.h"
+#include "../include/oled.h"
+#include "../include/util.h"
 
-// Conversion factor for gyro data to degrees per second
-// For ±250°/s range, sensitivity is 131 LSB/°/s
-#define GYRO_SENSITIVITY 131.0
+/* Data collection settings */
+#define DATA_POINTS           50    // Number of data points for the graph
+#define SAMPLE_INTERVAL_MS    20    // Sample interval in milliseconds
 
+/* Function prototypes */
+void display_splash_screen(void);
+void display_gyro_data(gyro_data_t *data);
+void collect_graph_data(int16_t data[], uint8_t size);
+
+/**
+ * Main program entry point
+ */
 int main(void) {
-    gyro_data_t gyro_data;
-    uint8_t connection_status;
-    
-    // Initialize serial communication
-    serial_init(9600);
-    serial_tx_string("MPU-92/65 Gyroscope with SA52-11EWA Display Demo\r\n");
-    
-    // Initialize I2C
+    // Initialize I2C communication interface
     i2c_init();
     
-    // Test MPU-92/65 connection
-    serial_tx_string("Testing connection to MPU-92/65... ");
-    connection_status = mpu9265_test_connection();
+    // Initialize devices
+    oled_init();
     
-    if (!connection_status) {
-        serial_tx_string("FAILED!\r\n");
-        serial_tx_string("Check connections and try again.\r\n");
-        while (1); // Stop program execution
-    } else {
-        serial_tx_string("SUCCESS!\r\n");
+    // Initialize MPU6050 and check if it's found
+    if (mpu6050_init()) {
+        // Display error on OLED if MPU6050 not found
+        oled_display_string(0, 0, "ERROR:");
+        oled_display_string(0, 1, "MPU6050 not found");
+        oled_display_string(0, 3, "Check connections");
+        while (1); // Halt
     }
     
-    // Initialize MPU-92/65
-    serial_tx_string("Initializing MPU-92/65... ");
-    if (mpu9265_init()) {
-        serial_tx_string("SUCCESS!\r\n");
-    } else {
-        serial_tx_string("FAILED!\r\n");
-        serial_tx_string("Check connections and try again.\r\n");
-        while (1); // Stop program execution
-    }
+    // Show splash screen
+    display_splash_screen();
+    _delay_ms(2000);
     
-    // Initialize SA52-11EWA display
-    serial_tx_string("Initializing SA52-11EWA display... ");
-    sa52_11ewa_init();
-    serial_tx_string("SUCCESS!\r\n");
+    // Buffer for graph data
+    int16_t graph_data[DATA_POINTS];
     
-    serial_tx_string("\r\nStarting gyroscope readings...\r\n\r\n");
-    
-    // Main loop
+    // Main program loop
     while (1) {
-        // Read gyroscope data
-        mpu9265_read_gyro(&gyro_data);
+        // Clear display
+        oled_clear();
         
-        // Scale the gyroscope value for display (divide by 100 to show smaller values)
-        int16_t display_value = gyro_data.x / 100;
+        // Display title
+        oled_display_string(0, 0, "MPU6050 Gyroscope");
+        oled_draw_line(0, 10, 127, 10);
         
-        // Display X-axis gyro value on SA52-11EWA display
-        sa52_11ewa_display_number(display_value);
+        // Read current gyro data and display
+        gyro_data_t current_data;
+        mpu6050_read_gyro(&current_data);
+        display_gyro_data(&current_data);
         
-        // Send data to serial monitor
-        serial_tx_string("Gyroscope data (raw): ");
-        serial_tx_string("X: ");
-        serial_tx_int16(gyro_data.x);
-        serial_tx_string(", Y: ");
-        serial_tx_int16(gyro_data.y);
-        serial_tx_string(", Z: ");
-        serial_tx_int16(gyro_data.z);
+        // Collect data for graph
+        collect_graph_data(graph_data, DATA_POINTS);
         
-        // Also send the calculated degrees per second
-        serial_tx_string(" | Degrees/s: X: ");
-        serial_tx_int16((int16_t)(gyro_data.x / GYRO_SENSITIVITY));
-        serial_tx_string(", Y: ");
-        serial_tx_int16((int16_t)(gyro_data.y / GYRO_SENSITIVITY));
-        serial_tx_string(", Z: ");
-        serial_tx_int16((int16_t)(gyro_data.z / GYRO_SENSITIVITY));
-        serial_tx_string("\r\n");
+        // Draw graph
+        oled_draw_graph(graph_data, DATA_POINTS, 4);
         
-        // Short delay between readings
-        _delay_ms(500);
+        // Wait a bit before refreshing
+        _delay_ms(100);
     }
     
-    return 0;
+    return 0; // Never reached
+}
+
+/**
+ * Display splash screen on OLED
+ */
+void display_splash_screen(void) {
+    oled_clear();
+    oled_display_string(10, 1, "MPU6050");
+    oled_display_string(20, 2, "with");
+    oled_display_string(5, 3, "SBC-OLED01");
+    oled_display_string(0, 5, "Doufless1");
+    oled_display_string(0, 6, "2025-03-18");
+}
+
+/**
+ * Display gyroscope data on OLED
+ */
+void display_gyro_data(gyro_data_t *data) {
+    // Convert to degrees/second (131 LSB per deg/s at ±250 deg/s range)
+    float x_dps = data->x / 131.0;
+    float y_dps = data->y / 131.0;
+    float z_dps = data->z / 131.0;
+    
+    // Display X axis
+    oled_display_string(0, 1, "X:");
+    oled_display_int(20, 1, (int16_t)x_dps);
+    oled_display_string(80, 1, "deg/s");
+    
+    // Display Y axis
+    oled_display_string(0, 2, "Y:");
+    oled_display_int(20, 2, (int16_t)y_dps);
+    oled_display_string(80, 2, "deg/s");
+    
+    // Display Z axis
+    oled_display_string(0, 3, "Z:");
+    oled_display_int(20, 3, (int16_t)z_dps);
+    oled_display_string(80, 3, "deg/s");
+}
+
+/**
+ * Collect gyroscope data for graphing
+ * data: Buffer to store collected data
+ * size: Number of data points to collect
+ */
+void collect_graph_data(int16_t data[], uint8_t size) {
+    gyro_data_t gyro_data;
+    
+    for (uint8_t i = 0; i < size; i++) {
+        mpu6050_read_gyro(&gyro_data);
+        data[i] = gyro_data.x / 131; // Use X-axis rotation in deg/s
+        _delay_ms(SAMPLE_INTERVAL_MS);
+    }
 }

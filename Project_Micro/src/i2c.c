@@ -1,13 +1,25 @@
+/**
+ * I2C communication implementation for AVR
+ */
+#include <avr/io.h>
 #include "../include/i2c.h"
+
+
+/**
+ * Initialize I2C communication with standard 100kHz clock
+ */
 void i2c_init(void) {
-    // Set SCL frequency to 100KHz with 16MHz system clock
-    // SCL frequency = CPU clock / (16 + 2 * TWBR * prescaler)
-    TWBR = 72;  // Prescaler = 1, TWBR = 72 gives 100KHz
-    
-    // Enable TWI module
-    TWCR = (1 << TWEN);
+    // Set SCL frequency to 100kHz for 16MHz CPU clock
+    TWSR = 0;                             // No prescaler
+    TWBR = (F_CPU / 100000UL - 16) / 2;   // Set bit rate register
+    TWCR = (1 << TWEN);                   // Enable I2C interface
 }
 
+/**
+ * Send I2C start condition and slave address
+ * address: Slave address with read/write bit
+ * Returns: 0 if successful, 1 if error
+ */
 uint8_t i2c_start(uint8_t address) {
     // Send START condition
     TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
@@ -15,72 +27,99 @@ uint8_t i2c_start(uint8_t address) {
     // Wait for TWINT flag to be set
     while (!(TWCR & (1 << TWINT)));
     
-    // Check if START was successfully transmitted
+    // Check if START was sent successfully
     if ((TWSR & 0xF8) != I2C_START && (TWSR & 0xF8) != I2C_REPEATED_START) {
-        return 0;
+        return 1;
     }
     
-    // Load SLA+W/R into TWDR register
+    // Load address into data register
     TWDR = address;
-    
-    // Clear TWINT flag to start transmission
     TWCR = (1 << TWINT) | (1 << TWEN);
     
     // Wait for TWINT flag to be set
     while (!(TWCR & (1 << TWINT)));
     
-    // Check if SLA+W/R was successfully transmitted and ACK received
-    if ((TWSR & 0xF8) != I2C_MT_SLA_ACK && (TWSR & 0xF8) != I2C_MR_SLA_ACK) {
-        return 0;
+    // Check if address was acknowledged
+    if ((TWSR & 0xF8) != I2C_SLA_W_ACK && (TWSR & 0xF8) != I2C_SLA_R_ACK) {
+        i2c_stop();
+        return 1;
     }
     
-    return 1;
+    return 0;
 }
 
+/**
+ * Repeatedly try to start I2C transmission until successful (for device detection)
+ * address: Slave address with read/write bit
+ */
+void i2c_start_wait(uint8_t address) {
+    uint8_t status;
+    do {
+        // Send START condition
+        TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+        
+        // Wait for TWINT flag to be set
+        while (!(TWCR & (1 << TWINT)));
+        
+        status = TWSR & 0xF8;
+        if (status != I2C_START && status != I2C_REPEATED_START) continue;
+        
+        // Load address into data register
+        TWDR = address;
+        TWCR = (1 << TWINT) | (1 << TWEN);
+        
+        // Wait for TWINT flag to be set
+        while (!(TWCR & (1 << TWINT)));
+        
+        status = TWSR & 0xF8;
+    } while (status != I2C_SLA_W_ACK && status != I2C_SLA_R_ACK);
+}
+
+/**
+ * Write data byte to I2C bus
+ * data: Byte to send
+ * Returns: 0 if successful, 1 if error
+ */
 uint8_t i2c_write(uint8_t data) {
-    // Load data into TWDR register
+    // Load data into register
     TWDR = data;
-    
-    // Clear TWINT flag to start transmission
     TWCR = (1 << TWINT) | (1 << TWEN);
     
     // Wait for TWINT flag to be set
     while (!(TWCR & (1 << TWINT)));
     
-    // Check if data was successfully transmitted and ACK received
-    if ((TWSR & 0xF8) != I2C_MT_DATA_ACK) {
-        return 0;
+    // Check if data was acknowledged
+    if ((TWSR & 0xF8) != I2C_DATA_ACK) {
+        return 1;
     }
     
-    return 1;
+    return 0;
 }
 
+/**
+ * Read data byte from I2C bus and send ACK
+ * Returns: Received data byte
+ */
 uint8_t i2c_read_ack(void) {
-    // Clear TWINT flag and enable ACK
     TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
-    
-    // Wait for TWINT flag to be set
     while (!(TWCR & (1 << TWINT)));
-    
-    // Return received data
     return TWDR;
 }
 
+/**
+ * Read data byte from I2C bus and send NACK
+ * Returns: Received data byte
+ */
 uint8_t i2c_read_nack(void) {
-    // Clear TWINT flag
     TWCR = (1 << TWINT) | (1 << TWEN);
-    
-    // Wait for TWINT flag to be set
     while (!(TWCR & (1 << TWINT)));
-    
-    // Return received data
     return TWDR;
 }
 
+/**
+ * Send I2C stop condition
+ */
 void i2c_stop(void) {
-    // Send STOP condition
-    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
-    
-    // Wait for STOP condition to be executed
-    while (TWCR & (1 << TWSTO));
+    TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+    while (TWCR & (1 << TWSTO));  // Wait until STOP is cleared
 }
