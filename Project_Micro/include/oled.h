@@ -41,18 +41,19 @@
 
 /* Function prototypes */
 void oled_init(void);
-void oled_command(uint8_t cmd);
-void oled_data(uint8_t data);
-void oled_set_position(uint8_t x, uint8_t page);
+void oled_command(int cmd);
+void oled_data(int data);
+void oled_set_position(int x, int page);
 void oled_clear(void);
 void oled_display_on(void);
 void oled_display_off(void);
-void oled_display_char(uint8_t x, uint8_t page, char ch);
-void oled_display_string(uint8_t x, uint8_t page, const char *str);
-void oled_display_int(uint8_t x, uint8_t page, int16_t value);
-void oled_draw_pixel(uint8_t x, uint8_t y, uint8_t color);
-void oled_draw_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
-void oled_draw_rect(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
-void oled_draw_graph(int16_t data[], uint8_t size, uint8_t page);
+void oled_display_char(int x, int page, char ch);
+void oled_display_string(int x, int page, const char *str);
+void oled_display_int(int x, int page, int value);
+void oled_draw_pixel(int x, int y, int color);
+void oled_draw_line(int x0, int y0, int x1, int y1);
+void oled_draw_rect(int x, int y, int width, int height);
+void oled_draw_graph(int data[], int size, int page);
+void oled_invert_display(uint8_t invert);
 
 #endif /* OLED_H */

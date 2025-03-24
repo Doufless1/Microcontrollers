@@ -20,7 +20,7 @@ void i2c_init(void) {
  * address: Slave address with read/write bit
  * Returns: 0 if successful, 1 if error
  */
-uint8_t i2c_start(uint8_t address) {
+int i2c_start(int address) {
     // Send START condition
     TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
     
@@ -52,8 +52,8 @@ uint8_t i2c_start(uint8_t address) {
  * Repeatedly try to start I2C transmission until successful (for device detection)
  * address: Slave address with read/write bit
  */
-void i2c_start_wait(uint8_t address) {
-    uint8_t status;
+void i2c_start_wait(int address) {
+    int status;
     do {
         // Send START condition
         TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
@@ -80,7 +80,7 @@ void i2c_start_wait(uint8_t address) {
  * data: Byte to send
  * Returns: 0 if successful, 1 if error
  */
-uint8_t i2c_write(uint8_t data) {
+int i2c_write(int data) {
     // Load data into register
     TWDR = data;
     TWCR = (1 << TWINT) | (1 << TWEN);
@@ -100,7 +100,7 @@ uint8_t i2c_write(uint8_t data) {
  * Read data byte from I2C bus and send ACK
  * Returns: Received data byte
  */
-uint8_t i2c_read_ack(void) {
+int i2c_read_ack(void) {
     TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
     while (!(TWCR & (1 << TWINT)));
     return TWDR;
@@ -110,7 +110,7 @@ uint8_t i2c_read_ack(void) {
  * Read data byte from I2C bus and send NACK
  * Returns: Received data byte
  */
-uint8_t i2c_read_nack(void) {
+int i2c_read_nack(void) {
     TWCR = (1 << TWINT) | (1 << TWEN);
     while (!(TWCR & (1 << TWINT)));
     return TWDR;

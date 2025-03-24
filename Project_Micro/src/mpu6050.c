@@ -3,17 +3,17 @@
 #include <util/delay.h>
 
 // I2C addresses
-uint8_t MPU6050_ADDR_W = (MPU6050_ADDR << 1);
-uint8_t MPU6050_ADDR_R = (MPU6050_ADDR << 1) | 1;
+int MPU6050_ADDR_W = (MPU6050_ADDR << 1);
+int MPU6050_ADDR_R = (MPU6050_ADDR << 1) | 1;
 
 /**
  * Read a register from MPU6050
  */
-uint8_t mpu6050_read_reg(uint8_t reg) {
+int mpu6050_read_reg(int reg) {
     i2c_start(MPU6050_ADDR_W);
     i2c_write(reg);
     i2c_start(MPU6050_ADDR_R);
-    uint8_t data = i2c_read_nack();
+    int data = i2c_read_nack();
     i2c_stop();
     return data;
 }
@@ -21,7 +21,7 @@ uint8_t mpu6050_read_reg(uint8_t reg) {
 /**
  * Write to a register on MPU6050
  */
-void mpu6050_write_reg(uint8_t reg, uint8_t value) {
+void mpu6050_write_reg(int reg, int value) {
     i2c_start(MPU6050_ADDR_W);
     i2c_write(reg);
     i2c_write(value);
@@ -32,8 +32,8 @@ void mpu6050_write_reg(uint8_t reg, uint8_t value) {
  * Test connection to MPU6050
  * Returns 1 if successful, 0 if failed
  */
-uint8_t mpu6050_test_connection(void) {
-    uint8_t who_am_i = mpu6050_read_reg(MPU6050_WHO_AM_I);
+int mpu6050_test_connection(void) {
+    int who_am_i = mpu6050_read_reg(MPU6050_WHO_AM_I);
     
     // MPU6050 should return 0x68 for WHO_AM_I
     return (who_am_i == 0x68);
@@ -43,7 +43,7 @@ uint8_t mpu6050_test_connection(void) {
  * Initialize MPU6050
  * Returns 0 if successful, 1 if failed
  */
-uint8_t mpu6050_init(void) {
+int mpu6050_init(void) {
     // Delay for device power-up
     _delay_ms(100);
     
@@ -93,16 +93,16 @@ uint8_t mpu6050_init(void) {
  * Read gyroscope data
  */
 void mpu6050_read_gyro(gyro_data_t *data) {
-    data->x = ((int16_t)mpu6050_read_reg(MPU6050_GYRO_XOUT_H) << 8) | mpu6050_read_reg(MPU6050_GYRO_XOUT_L);
-    data->y = ((int16_t)mpu6050_read_reg(MPU6050_GYRO_YOUT_H) << 8) | mpu6050_read_reg(MPU6050_GYRO_YOUT_L);
-    data->z = ((int16_t)mpu6050_read_reg(MPU6050_GYRO_ZOUT_H) << 8) | mpu6050_read_reg(MPU6050_GYRO_ZOUT_L);
+    data->x = ((int)mpu6050_read_reg(MPU6050_GYRO_XOUT_H) << 8) | mpu6050_read_reg(MPU6050_GYRO_XOUT_L);
+    data->y = ((int)mpu6050_read_reg(MPU6050_GYRO_YOUT_H) << 8) | mpu6050_read_reg(MPU6050_GYRO_YOUT_L);
+    data->z = ((int)mpu6050_read_reg(MPU6050_GYRO_ZOUT_H) << 8) | mpu6050_read_reg(MPU6050_GYRO_ZOUT_L);
 }
 
 /**
  * Read accelerometer data
  */
 void mpu6050_read_accel(accel_data_t *data) {
-    data->x = ((int16_t)mpu6050_read_reg(MPU6050_ACCEL_XOUT_H) << 8) | mpu6050_read_reg(MPU6050_ACCEL_XOUT_L);
-    data->y = ((int16_t)mpu6050_read_reg(MPU6050_ACCEL_YOUT_H) << 8) | mpu6050_read_reg(MPU6050_ACCEL_YOUT_L);
-    data->z = ((int16_t)mpu6050_read_reg(MPU6050_ACCEL_ZOUT_H) << 8) | mpu6050_read_reg(MPU6050_ACCEL_ZOUT_L);
+    data->x = ((int)mpu6050_read_reg(MPU6050_ACCEL_XOUT_H) << 8) | mpu6050_read_reg(MPU6050_ACCEL_XOUT_L);
+    data->y = ((int)mpu6050_read_reg(MPU6050_ACCEL_YOUT_H) << 8) | mpu6050_read_reg(MPU6050_ACCEL_YOUT_L);
+    data->z = ((int)mpu6050_read_reg(MPU6050_ACCEL_ZOUT_H) << 8) | mpu6050_read_reg(MPU6050_ACCEL_ZOUT_L);
 }

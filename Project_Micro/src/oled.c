@@ -50,7 +50,7 @@ void oled_init(void) {
  * Send a command to OLED
  * cmd: Command to send
  */
-void oled_command(uint8_t cmd) {
+void oled_command(int cmd) {
     i2c_start(OLED_ADDR_W);
     i2c_write(OLED_CMD_MODE);   // Control byte: Co=0, D/C=0 (command)
     i2c_write(cmd);
@@ -61,7 +61,7 @@ void oled_command(uint8_t cmd) {
  * Send data to OLED
  * data: Data to send
  */
-void oled_data(uint8_t data) {
+void oled_data(int data) {
     i2c_start(OLED_ADDR_W);
     i2c_write(OLED_DATA_MODE);   // Control byte: Co=0, D/C=1 (data)
     i2c_write(data);
@@ -73,7 +73,7 @@ void oled_data(uint8_t data) {
  * x: X position (0-127)
  * page: Page number (0-7)
  */
-void oled_set_position(uint8_t x, uint8_t page) {
+void oled_set_position(int x, int page) {
     if (page > 7) page = 7;
     if (x > 127) x = 127;
     
@@ -86,14 +86,14 @@ void oled_set_position(uint8_t x, uint8_t page) {
  * Clear the OLED display
  */
 void oled_clear(void) {
-    for (uint8_t page = 0; page < 8; page++) {
+    for (int page = 0; page < 8; page++) {
         oled_set_position(0, page);
         
         // Send 128 bytes of zeros to clear the page
         i2c_start(OLED_ADDR_W);
         i2c_write(OLED_DATA_MODE);   // Control byte for continuous data
         
-        for (uint8_t x = 0; x < 128; x++) {
+        for (int x = 0; x < 128; x++) {
             i2c_write(0x00);
         }
         
@@ -121,7 +121,7 @@ void oled_display_off(void) {
  * page: Page number (0-7)
  * ch: Character to display
  */
-void oled_display_char(uint8_t x, uint8_t page, char ch) {
+void oled_display_char(int x, int page, char ch) {
     if (ch < ' ' || ch > '~') {
         ch = ' ';  // Default to space for non-printable chars
     }
@@ -130,13 +130,13 @@ void oled_display_char(uint8_t x, uint8_t page, char ch) {
     oled_set_position(x, page);
     
     // Calculate font index
-    uint8_t idx = ch - ' ';
+    int idx = ch - ' ';
     
     // Send font data
     i2c_start(OLED_ADDR_W);
     i2c_write(OLED_DATA_MODE);
     
-    for (uint8_t i = 0; i < 5; i++) {
+    for (int i = 0; i < 5; i++) {
         i2c_write(pgm_read_byte(&font5x7[idx][i]));
     }
     
@@ -152,8 +152,8 @@ void oled_display_char(uint8_t x, uint8_t page, char ch) {
  * page: Page number (0-7)
  * str: String to display
  */
-void oled_display_string(uint8_t x, uint8_t page, const char *str) {
-    uint8_t pos_x = x;
+void oled_display_string(int x, int page, const char *str) {
+    int pos_x = x;
     
     while (*str) {
         oled_display_char(pos_x, page, *str++);
@@ -177,7 +177,7 @@ void oled_display_string(uint8_t x, uint8_t page, const char *str) {
  * page: Page number (0-7)
  * value: Integer to display
  */
-void oled_display_int(uint8_t x, uint8_t page, int16_t value) {
+void oled_display_int(int x, int page, int value) {
     char buffer[7];  // Max 5 digits + sign + null
     int_to_str(value, buffer);
     oled_display_string(x, page, buffer);
@@ -189,12 +189,12 @@ void oled_display_int(uint8_t x, uint8_t page, int16_t value) {
  * y: Y coordinate (0-63)
  * color: Pixel color (1 = on, 0 = off)
  */
-void oled_draw_pixel(uint8_t x, uint8_t y, uint8_t color) {
+void oled_draw_pixel(int x, int y, int color) {
     if (x >= OLED_WIDTH || y >= OLED_HEIGHT) return;
     
-    uint8_t page = y / 8;
-    uint8_t bit = y % 8;
-    uint8_t data;
+    int page = y / 8;
+    int bit = y % 8;
+    int data;
     
     // Set cursor to the right position
     oled_set_position(x, page);
@@ -221,13 +221,13 @@ void oled_draw_pixel(uint8_t x, uint8_t y, uint8_t color) {
  * x0, y0: Start coordinates
  * x1, y1: End coordinates
  */
-void oled_draw_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
-    int16_t dx = abs_int16(x1 - x0);
-    int16_t sx = x0 < x1 ? 1 : -1;
-    int16_t dy = -abs_int16(y1 - y0);
-    int16_t sy = y0 < y1 ? 1 : -1;
-    int16_t err = dx + dy;
-    int16_t e2;
+void oled_draw_line(int x0, int y0, int x1, int y1) {
+    int dx = abs_int16(x1 - x0);
+    int sx = x0 < x1 ? 1 : -1;
+    int dy = -abs_int16(y1 - y0);
+    int sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy;
+    int e2;
     
     while (1) {
         oled_draw_pixel(x0, y0, 1);
@@ -254,7 +254,7 @@ void oled_draw_line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
  * width: Rectangle width
  * height: Rectangle height
  */
-void oled_draw_rect(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
+void oled_draw_rect(int x, int y, int width, int height) {
     oled_draw_line(x, y, x + width - 1, y);
     oled_draw_line(x, y + height - 1, x + width - 1, y + height - 1);
     oled_draw_line(x, y, x, y + height - 1);
@@ -267,12 +267,12 @@ void oled_draw_rect(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
  * size: Number of data points
  * page: Starting page (0-6)
  */
-void oled_draw_graph(int16_t data[], uint8_t size, uint8_t page) {
+void oled_draw_graph(int data[], int size, int page) {
     // Find min and max values for scaling
-    int16_t min_val = 32767;
-    int16_t max_val = -32768;
+    int min_val = 32767;
+    int max_val = -32768;
     
-    for (uint8_t i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
         if (data[i] < min_val) min_val = data[i];
         if (data[i] > max_val) max_val = data[i];
     }
@@ -297,8 +297,8 @@ void oled_draw_graph(int16_t data[], uint8_t size, uint8_t page) {
     oled_draw_line(0, page * 8 + 8, 127, page * 8 + 8);
     
     // Draw graph
-    for (uint8_t i = 0; i < size && i < 128; i++) {
-        int16_t y_pos = page * 8 + 8 - ((data[i] - min_val) * scale_factor) / 100;
+    for (int i = 0; i < size && i < 128; i++) {
+        int y_pos = page * 8 + 8 - ((data[i] - min_val) * scale_factor) / 100;
         
         // Ensure y position is within bounds
         if (y_pos < page * 8) y_pos = page * 8;
@@ -306,4 +306,11 @@ void oled_draw_graph(int16_t data[], uint8_t size, uint8_t page) {
         
         oled_draw_pixel(i, y_pos, 1);
     }
+}
+/**
+ * Invert the display colors
+ * invert: 1 to invert, 0 for normal
+ */
+void oled_invert_display(uint8_t invert) {
+    oled_command(invert ? 0xA7 : 0xA6); // A7=Invert, A6=Normal
 }

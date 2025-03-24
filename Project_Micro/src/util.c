@@ -8,19 +8,19 @@
  * value: Input value
  * Returns: Absolute value
  */
-int16_t abs_int16(int16_t value) {
+int abs_int16(int value) {
     return value < 0 ? -value : value;
 }
 
 /**
- * Convert int16_t to string
+ * Convert int to string
  * value: Integer to convert
  * buffer: Buffer to store the string (min size: 7 bytes)
  */
-void int_to_str(int16_t value, char* buffer) {
-    uint8_t is_negative = 0;
-    uint16_t u_value;
-    uint8_t i = 0, j = 0;
+void int_to_str(int value, char* buffer) {
+    int is_negative = 0;
+    int u_value;
+    int i = 0, j = 0;
     char temp_buffer[7];
     
     // Handle negative numbers
