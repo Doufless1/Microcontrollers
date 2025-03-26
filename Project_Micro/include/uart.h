@@ -1,6 +1,4 @@
-/**
- * UART communication interface for AVR
- */
+
 #ifndef UART_H
 #define UART_H
 

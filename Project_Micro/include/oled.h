@@ -6,22 +6,27 @@
 
 #include <stdint.h>
 
-/* OLED Display constants */
-#define OLED_ADDR             0x3C  // or 0x3D based on the module
+// OLED Display constants you can find on chaper 1.8.5
+#define OLED_ADDR             0x3C  // page 20 of SSD1306
 #define OLED_ADDR_W           ((OLED_ADDR << 1) | 0)
 #define OLED_ADDR_R           ((OLED_ADDR << 1) | 1)
-#define OLED_CMD_MODE         0x00  // Command mode
+#define OLED_CMD_MODE         0x00  // Command mode page 20 also
 #define OLED_DATA_MODE        0x40  // Data mode
 
 #define OLED_WIDTH            128
-#define OLED_HEIGHT           64
-#define OLED_PAGES            8     // OLED_HEIGHT / 8
+#define OLED_HEIGHT           64    
+#define OLED_PAGES            8     // Height_of_display / 8 vertical pixels
+                                    // each page(vertical line has 8 pixels)
+                                    // so we get 8*8 = 64
+                                    // Each column in a page stores 8 pixels as 1 byte (since 1 byte = 8 bits).
+                                    // Since there are 128 columns per page, you have a 128x8 memory map for each page.
 
 /* OLED commands */
-#define OLED_DISPLAY_OFF      0xAE
+#define OLED_DISPLAY_OFF      0xAE // all the commands are on page 28
 #define OLED_DISPLAY_ON       0xAF
 #define OLED_DISPLAY_NORMAL   0xA6
 #define OLED_DISPLAY_INVERT   0xA7
+// from like page 32 are the other commands 
 #define OLED_SET_CONTRAST     0x81
 #define OLED_SET_NORM_DISP    0xA6
 #define OLED_SET_ENTIRE_ON    0xA4
