@@ -8,10 +8,14 @@
 
 // OLED Display constants you can find on chaper 1.8.5
 #define OLED_ADDR             0x3C  // page 20 of SSD1306
-#define OLED_ADDR_W           ((OLED_ADDR << 1) | 0)
-#define OLED_ADDR_R           ((OLED_ADDR << 1) | 1)
+#define OLED_ADDR_W           ((OLED_ADDR << 1) | 0) // write opeariton
+#define OLED_ADDR_R           ((OLED_ADDR << 1) | 1) // read operation
+                                                     // here each adressed is shifted by 1 bit and the R/W bit is appended as LSB
 #define OLED_CMD_MODE         0x00  // Command mode page 20 also
 #define OLED_DATA_MODE        0x40  // Data mode
+                                    //
+                                    // When SA0 is connected to GND → Address is 0x3C (0111100b)
+//                                   When SA0 is connected to VCC → Address is 0x3D (0111101b)
 
 #define OLED_WIDTH            128
 #define OLED_HEIGHT           64    
@@ -20,8 +24,9 @@
                                     // so we get 8*8 = 64
                                     // Each column in a page stores 8 pixels as 1 byte (since 1 byte = 8 bits).
                                     // Since there are 128 columns per page, you have a 128x8 memory map for each page.
+                                    //more details at 15-17 page
 
-/* OLED commands */
+
 #define OLED_DISPLAY_OFF      0xAE // all the commands are on page 28
 #define OLED_DISPLAY_ON       0xAF
 #define OLED_DISPLAY_NORMAL   0xA6
@@ -44,7 +49,6 @@
 #define OLED_SET_VCOM_DESEL   0xDB
 #define OLED_SET_CHARGE_PUMP  0x8D
 
-/* Function prototypes */
 void oled_init(void);
 void oled_command(int cmd);
 void oled_data(int data);

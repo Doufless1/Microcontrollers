@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-/* I2C status codes */
+// page 229
 #define I2C_START             0x08 // The START condition was transmitted successfully
 #define I2C_REPEATED_START    0x10 // A repeated START condition was transmitted
 #define I2C_SLA_W_ACK         0x18 // slave address + the write was transimitted and ACK recived it.

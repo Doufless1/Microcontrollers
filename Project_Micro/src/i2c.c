@@ -1,6 +1,4 @@
-/**
- * I2C communication implementation for AVR
- */
+
 #include <avr/io.h>
 #include "../include/i2c.h"
 
@@ -9,10 +7,16 @@
  * Initialize I2C communication with standard 100kHz clock
  */
 void i2c_init(void) {
+  // page 221
     // Set SCL frequency to 100kHz for 16MHz CPU clock
-    TWSR = 0;                             // No prescaler
+    TWSR = 0;                             //  page 242 Bits 7-3 Status bits that indicate the current state ofthe TWI intface and the 1-0 bits that are the prescaler bits that affect the SCL frequency.
     TWBR = (F_CPU / 100000UL - 16) / 2;   // Set bit rate register
-    TWCR = (1 << TWEN);                   // Enable I2C interface
+    TWCR = (1 << TWEN);                   // Enable I2C interface u can see all imporant bits on page 424
+  // TWEN (TWI Enable): Enables the TWI interface
+// TWINT (TWI Interrupt Flag): Set by hardware when a TWI event completes
+//TWSTA (START Condition Bit): Generates a START condition when set
+//TWSTO (STOP Condition Bit): Generates a STOP condition when set
+//TWEA (Enable Acknowledge Bit): Enables acknowledge generation
 }
 
 /**
@@ -28,7 +32,7 @@ int i2c_start(int address) {
     while (!(TWCR & (1 << TWINT)));
     
     // Check if START was sent successfully
-    if ((TWSR & 0xF8) != I2C_START && (TWSR & 0xF8) != I2C_REPEATED_START) {
+    if ((TWSR & 0xF8) != I2C_START && (TWSR & 0xF8) != I2C_REPEATED_START) { // PAGE 226
         return 1;
     }
     

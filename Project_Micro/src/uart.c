@@ -7,72 +7,60 @@
 #include <stdlib.h>
 #include "../include/uart.h"
 
-// Circular buffer for receiving data
+// we use the volatile because the variables are modifiend during the interup routine
 static char rx_buffer[UART_BUFFER_SIZE];
 static volatile int rx_head = 0;
 static volatile int rx_tail = 0;
 
-// Flag for command ready
 static volatile int command_ready = 0;
 static char command_buffer[UART_BUFFER_SIZE];
 
-// Current command being processed
 char current_command[UART_BUFFER_SIZE];
 int command_param = 0;
 
-/**
- * Initialize UART with specified baud rate
- */
-void uart_init(uint32_t baud) {
-    // Calculate baud rate register value
-    uint16_t baud_setting = (F_CPU / 8 / baud - 1) / 2;
+
+void uart_init(int baud) {
+  // page 178
+    int baud_setting = (F_CPU / 8 / baud - 1) / 2;
     
-    // Set baud rate
+    // setting up the baud rate
     UBRR0H = (int)(baud_setting >> 8);
     UBRR0L = (int)baud_setting;
-    
-    // Enable receiver, transmitter and receiver interrupt
+   
+  // set up reciver transmitter and interupt
     UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
     
-    // Set frame format: 8 data bits, 1 stop bit, no parity
+    // set frame format: 8 data bits, 1 stop bit, no parity
     UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
     
-    // Enable global interrupts
     sei();
+  // page 241-242
 }
 
-/**
- * Send a single character
- */
+
 void uart_putc(char c) {
-    // Wait for empty transmit buffer
+    // wait for empty transmit buffer
     while (!(UCSR0A & (1 << UDRE0)));
     
-    // Put data into buffer
+   // Writing to UDR0 loads the transmit buffer
+//The hardware automatically shifts out the data on TXD pin at the configured baud rate
     UDR0 = c;
 }
 
-/**
- * Send a string
- */
+
 void uart_puts(const char *s) {
     while (*s) {
         uart_putc(*s++);
     }
 }
 
-/**
- * Send an integer as string
- */
 void uart_puti(int i) {
     char buffer[12]; // Enough for 32-bit int
     itoa(i, buffer, 10);
     uart_puts(buffer);
 }
 
-/**
- * Read a character (returns -1 if no data available)
- */
+
 int uart_getc(void) {
     // If buffer is empty, return -1
     if (rx_head == rx_tail) {
@@ -87,37 +75,29 @@ int uart_getc(void) {
     return c;
 }
 
-/**
- * Check if data is available to read
- */
 int uart_available(void) {
     return (rx_head != rx_tail);
 }
 
-/**
- * Process any received commands
- * Returns: 1 if new command processed, 0 otherwise
- */
+
 int uart_process_command(void) {
     if (!command_ready) {
         return 0;
     }
     
-    // Copy command to working buffer
+    // copy command to working buffer
     strcpy(current_command, command_buffer);
     command_ready = 0;
     
-    // Find space to separate command and parameter
+    // find space to separate command and parameter
     char *space = strchr(current_command, ' ');
     if (space != NULL) {
-        // Split into command and parameter
         *space = '\0';
         command_param = atoi(space + 1);
     } else {
         command_param = 0;
     }
     
-    // Acknowledge command received
     uart_puts("CMD: ");
     uart_puts(current_command);
     uart_puts(" PARAM: ");
@@ -127,19 +107,15 @@ int uart_process_command(void) {
     return 1;
 }
 
-/**
- * UART Receive Complete interrupt handler
- */
 ISR(USART_RX_vect) {
-    // Read received byte
+  // Reading UDR0 retrieves the received byte and clears the interrupt flag
     char c = UDR0;
     
-    // Echo character back
+    // sends and recives the character back
     uart_putc(c);
     
-    // Process character
-    if (c == '\r' || c == '\n') {
-        // End of command, null-terminate and set flag
+    if (c == '\r' || c == '\n') { // check for line edingins
+        // end of command, null-terminate and set flag
         if (rx_head != rx_tail) {
             int i = 0;
             int tail = rx_tail;
